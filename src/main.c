@@ -4,6 +4,9 @@ pthread_mutex_t loading_lock;
 
 game_scene_t game_scene;
 
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
+
 
 void *some_long_funciton( void *ptr )
 {
@@ -11,7 +14,7 @@ void *some_long_funciton( void *ptr )
     char *message;
     message = (char *) ptr;
     printf("%s \n", message);
-    for(int i = 0; i < 1000000000; i++) {
+    for(int i = 0; i < 100000000; i++) {
         asdf += 1.5;
     }
     printf("End function: %f\n", asdf);
@@ -63,13 +66,17 @@ int run(void) {
     double delta_time = 0.0;
     double last_frame = 0.0;
 
-    //render_splash();
+    render_init_splash();
     pthread_t thread1;
     char *message1 = "Thread 1";
-    int  iret1;
 
-    iret1 = pthread_create( &thread1, NULL, some_long_funciton, (void*) message1);
+    if(pthread_create( &thread1, NULL, some_long_funciton, (void*) message1)) {
+        return 1;
+    };
     game_scene.current_state = LOADING;
+
+    ui_componets_t * ui = init_ui(window);
+    //double lag = 0.0;
 
     while (!glfwWindowShouldClose(window)) {
         double current_frame = glfwGetTime();
@@ -82,12 +89,16 @@ int run(void) {
             if(game_scene.current_state == MENU) {
                 pthread_join( thread1, NULL);
             }
+        } else if(game_scene.current_state == MENU) {
+            render_menu(delta_time, ui);
         } else {
             render_scene(delta_time);
         }
 
         glfwSwapBuffers(window);
+        nk_clear(ui->ctx);
     }
+    free(ui);
     glfwDestroyWindow(window);
 
     glfwTerminate();
