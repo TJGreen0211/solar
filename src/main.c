@@ -21,6 +21,7 @@ void *some_long_funciton( void *ptr )
     pthread_mutex_lock(&loading_lock);
     game_scene.last_state = game_scene.current_state;
     game_scene.current_state = MENU;
+    game_scene.changed_state = 1;
     pthread_mutex_unlock(&loading_lock);
 
     return 0;
@@ -66,7 +67,7 @@ int run(void) {
     double delta_time = 0.0;
     double last_frame = 0.0;
 
-    render_init_splash();
+    
     pthread_t thread1;
     char *message1 = "Thread 1";
 
@@ -74,27 +75,39 @@ int run(void) {
         return 1;
     };
     game_scene.current_state = LOADING;
+    game_scene.changed_state = 0;
 
-    ui_componets_t * ui = init_ui(window);
+    splash_screen_t *splash_screen = render_init_splash();
+    ui_componets_t *ui = init_ui(window);
+    main_menu_t *main_menu;
+    
     //double lag = 0.0;
 
     while (!glfwWindowShouldClose(window)) {
         double current_frame = glfwGetTime();
         delta_time = current_frame - last_frame;
 		last_frame = current_frame;
-        glfwPollEvents();
+        
 
-        if(game_scene.current_state == LOADING) {
-            render_splash();
-            if(game_scene.current_state == MENU) {
+        if(game_scene.current_state == LOADING || game_scene.changed_state) {
+            render_splash(splash_screen);
+            if(game_scene.last_state == LOADING) {
                 pthread_join( thread1, NULL);
+                render_destroy_splash(splash_screen);
+                printf("MAIN MENU INIT\n");
+                main_menu = render_init_main_menu();
+                game_scene.changed_state = 0;
             }
         } else if(game_scene.current_state == MENU) {
-            render_menu(delta_time, ui);
+            render_main_menu(delta_time, ui, main_menu);
+            if(game_scene.current_state == RUNNING) {
+                render_destroy_main_menu(main_menu);
+            }
         } else {
             render_scene(delta_time);
         }
 
+        glfwPollEvents();
         glfwSwapBuffers(window);
         nk_clear(ui->ctx);
     }

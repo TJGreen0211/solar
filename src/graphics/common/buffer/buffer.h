@@ -7,6 +7,8 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
+#define BUFFER_OFFSET(offset) ((char*)NULL+(offset))
+
 typedef struct buffer_t {
     unsigned int vao;
     unsigned int vbo;
@@ -15,13 +17,11 @@ typedef struct buffer_t {
     int normal_size;
     int tangent_size;
     int tex_coord_size;
-    float *points[3];
-	float *normals[3];
-	float *tangents[3];
-	float *tex_coords[2];
+    float *points;
+	float *normals;
+	float *tangents;
+	float *tex_coords;
 } buffer_t;
-
-#define BUFFER_OFFSET(offset) ((char*)NULL+(offset))
 
 void buffer_init_object(buffer_t *buf_object);
 

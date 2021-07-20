@@ -1,8 +1,30 @@
 #include "render.h"
 #include "ui/nkinclude.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
+
+static struct nk_image image_load_icon(const char *filename) {
+    int x,y,n;
+    unsigned int tex;
+    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
+    if (!data) {
+        printf("[SDL]: failed to load image: %s", filename);
+    }
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    return nk_image_id((int)tex);
+}
 
 
 void *init_ui(GLFWwindow* window) {
@@ -16,10 +38,12 @@ void *init_ui(GLFWwindow* window) {
     return ui_componets;
 }
 
-buffer_t splash_buffer;
 
-void render_init_splash() {
-    int splash_shader = shader_create_program("resources/shaders/screen.vert",
+splash_screen_t *render_init_splash() {
+    splash_screen_t *splash = malloc(sizeof(splash_screen_t));
+    buffer_t object_buffer = {0};
+
+    splash->shader = shader_create_program("resources/shaders/screen.vert",
         "resources/shaders/screen.frag",NULL,NULL,NULL);
 
     float vertices[] = {
@@ -27,31 +51,33 @@ void render_init_splash() {
          0.5f, -0.5f, 0.0f,
          0.0f,  0.5f, 0.0f
     };
+    
+    object_buffer.point_size = sizeof(vertices);
+    
+    object_buffer.points = malloc(sizeof(float)*object_buffer.point_size/sizeof(vertices[0]));
+    memcpy(object_buffer.points, vertices, sizeof(float)*object_buffer.point_size/sizeof(vertices[0]));
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    buffer_init_object(&object_buffer);
+    
+    object_buffer.vertex_number = (object_buffer.point_size/sizeof(vertices[0]))/3;
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    splash->object_buffer = object_buffer;
+    printf("VERTEX NUMBER: %d\n", splash->object_buffer.vertex_number);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0); 
-
+    return splash;
 }
 
-void render_splash() {
+void render_splash(splash_screen_t *splash) {
     glClearColor(0.3f, 0.3f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(splash->shader);
+    glBindVertexArray(splash->object_buffer.vao);
+    glDrawArrays(GL_TRIANGLES, 0, splash->object_buffer.vertex_number);
+}
+
+void render_destroy_splash(splash_screen_t *splash) {
+    free(splash);
 }
 
 void render_scene(double delta_time) {
@@ -59,7 +85,16 @@ void render_scene(double delta_time) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-int render_menu(double delta_time, ui_componets_t *ui_menu) {
+main_menu_t *render_init_main_menu() {
+    main_menu_t *main_menu = malloc(sizeof(main_menu_t));
+
+    main_menu->play = image_load_icon("resources/ui/main_menu/icons/play.png");
+    main_menu->settings = image_load_icon("resources/ui/main_menu/icons/play.png");
+    main_menu->quit = image_load_icon("resources/ui/main_menu/icons/play.png");
+    return main_menu;
+}
+
+void render_main_menu(double delta_time, ui_componets_t *ui_menu, main_menu_t *main_menu) {
     glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     nk_glfw3_new_frame(&ui_menu->glfw);
@@ -73,6 +108,13 @@ int render_menu(double delta_time, ui_componets_t *ui_menu) {
         nk_layout_row_static(ui_menu->ctx, 30, 80, 1);
         if (nk_button_label(ui_menu->ctx, "button"))
             fprintf(stdout, "button pressed\n");
+
+        //static const float ratio[] = {0.15f, 0.85f};
+        //nk_style_set_font(ui_menu->ctx, &main_menu->font_22->handle);
+        //nk_layout_row(ui_menu->ctx, NK_DYNAMIC, height, 2, ratio);
+        //nk_spacing(ui_menu->ctx, 1);
+        if (nk_button_image_label(ui_menu->ctx, main_menu->play, "Styled", NK_TEXT_CENTERED))
+            fprintf(stdout, "rocket!\n");
 
         nk_layout_row_dynamic(ui_menu->ctx, 30, 2);
         if (nk_option_label(ui_menu->ctx, "easy", op == EASY)) op = EASY;
@@ -97,6 +139,9 @@ int render_menu(double delta_time, ui_componets_t *ui_menu) {
     }
     nk_end(ui_menu->ctx);
     nk_glfw3_render(&ui_menu->glfw, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
-    
-    return 0;
+}
+
+
+void render_destroy_main_menu(main_menu_t *main_menu) {
+    free(main_menu);
 }

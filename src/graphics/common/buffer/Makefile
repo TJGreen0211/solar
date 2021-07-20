@@ -17,7 +17,6 @@ debug_compile : CFLAGS += -DDEBUG
 debug_compile : do_precomp target clean
 
 do_precomp:
-	@echo $(INCLUDE_PATHS)
 	$(CC) $(CFLAGS) -c $(SRCS) $(INCLUDE_PATHS)
 
 target:

@@ -6,6 +6,8 @@ void buffer_init_object(buffer_t *buf_object) {
     glGenBuffers(1, &buf_object->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, buf_object->vbo);
 
+	printf("ASDF QWERTY\n");
+
     glBufferData(GL_ARRAY_BUFFER, buf_object->point_size+buf_object->normal_size+buf_object->tangent_size+buf_object->tex_coord_size, NULL, GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, buf_object->point_size, buf_object->points);
 	glBufferSubData(GL_ARRAY_BUFFER, buf_object->point_size, buf_object->normal_size, buf_object->normals);
@@ -24,14 +26,10 @@ void buffer_init_object(buffer_t *buf_object) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-	//free(buf_object->points);
-	//free(buf_object->normals);
-	//free(buf_object->tangents);
-	//free(buf_object->tex_coords);
+	buf_object->vertex_number = (buf_object->point_size/sizeof(float))/3;
 
-	//buffer_object.vertex_number = geom.vertex_number;
-	//buffer_object.point_size = geom.point_size;
-	//buffer_object.normal_size = geom.normal_size;
-	//buffer_object.tangent_size = geom.tangent_size;
-	//buffer_object.tex_coord_size = geom.tex_coord_size;
+	free(buf_object->points);
+	free(buf_object->normals);
+	free(buf_object->tangents);
+	free(buf_object->tex_coords);
 }
