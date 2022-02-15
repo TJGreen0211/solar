@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall
-PROG = render
+PROG = loader
 
 MAKE_DIR = $(PWD)
-SRCS = render.c 
-OBJS = render.o common/shader/shader.a common/buffer/buffer.a ui/asdf.a
+SRCS = obj.c
+OBJS = obj.o
 
 
 all : do_precomp target clean
@@ -17,10 +17,6 @@ debug_compile : CFLAGS += -DDEBUG
 debug_compile : do_precomp target clean
 
 do_precomp:
-	@echo $(INCLUDE_PATHS)
-	@$(MAKE) -C common/shader
-	@$(MAKE) -C common/buffer
-	@$(MAKE) -C ui
 	$(CC) $(CFLAGS) -c $(SRCS) $(INCLUDE_PATHS)
 
 target:

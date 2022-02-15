@@ -9,7 +9,10 @@ INCLUDE_DIR = $(MAKE_DIR)/include
 SRCS = src/main.c \
 	include/glad/glad.c \
 	src/graphics/render.a \
+	src/utility/camera/camera.a \
+	src/geometry/loader/loader.a \
 	src/utility/matrixmath/matrixmath.a
+	
 OBJS = main.o
 
 INCLUDE_PATHS = -I $(INCLUDE_DIR) -I /usr/include/python3.9
@@ -30,6 +33,8 @@ debug_compile : compile clean
 build_libs:
 	@$(MAKE) -C src/graphics
 	@$(MAKE) -C src/utility/matrixmath
+	@$(MAKE) -C src/utility/camera
+	@$(MAKE) -C src/geometry/loader
 
 compile:
 	@echo $(MAKE_DIR) 

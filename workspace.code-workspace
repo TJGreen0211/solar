@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"render.h": "c",
+			"buffer.h": "c",
+			"nuklear.h": "c",
+			"nkinclude.h": "c",
+			"mainmenu.h": "c",
+			"shader.h": "c"
+		}
+	}
+}
